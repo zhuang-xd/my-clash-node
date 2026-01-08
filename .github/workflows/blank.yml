@@ -1,0 +1,37 @@
+on:
+    # push:  # 推送代码时触发工作流
+    workflow_dispatch:  # 手动触发工作流
+    schedule: #UTC+8 转换成 UTC时间
+      - cron: '0 0 * * *'   # 每天 08:00 (中国时间)
+      - cron: '30 6 * * *'  # 每天 14:30 (中国时间)
+      - cron: '0 10 * * *'  # 每天 18:00 (中国时间)
+  
+jobs:
+  run_script:
+    runs-on: ubuntu-latest  # 使用 Ubuntu 环境来运行脚本
+
+    permissions:
+      contents: write  # 为 GITHUB_TOKEN 或 ACCESS_TOKEN 授权写入权限
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2  # 检出仓库代码
+
+      - name: Clear yaml files  # 清除仓库中的 YAML 文件
+        run: |
+          rm -rf ./*.yaml 
+
+      - name: Run update.sh update YAML files  # 运行 update.sh 脚本更新 YAML 文件
+        run: |
+          chmod +x ./update.sh  # 给脚本加上执行权限
+          ./update.sh  # 执行脚本
+
+      - name: Commit and push changes  # 提交并推送修改
+        run: |
+          git config --global user.email "xiaodong.zhuang@hotmail.com"
+          git config --global user.name "Xiaodong Zhuang"
+          git add .
+          git commit -m "updated by github actions"
+          git push https://x-access-token:${{ secrets.ACCESS_TOKEN }}@github.com/${{ github.repository }} 
+        env:
+          GITHUB_TOKEN: ${{ secrets.ACCESS_TOKEN }}  # 设置环境变量，使用存储的 ACCESS_TOKEN 推送代码
